@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wedding Registry — Shagun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  .cover { position: relative; border-radius: 0 0 28px 28px; overflow: hidden; background: linear-gradient(135deg, var(--accent), var(--gold)); color: #fff; text-align: center; padding: 72px 16px 56px; }
+  .cover.has-img { background-size: cover; background-position: center; }
+  .cover.has-img::before { content: ""; position: absolute; inset: 0; background: rgba(20,10,5,.45); }
+  .cover > * { position: relative; }
+  .cover h1 { font-size: clamp(2.2rem, 6vw, 3.8rem); margin-bottom: 8px; }
+  .cover .amp { color: #ffe3a3; }
+  .note { position: relative; max-width: 640px; margin: -32px auto 28px; text-align: center; white-space: pre-line; }
+  .filters { margin-bottom: 18px; }
+</style>
+</head>
+<body>
+<div id="notFound" class="wrap hidden" style="text-align:center;padding:80px 16px"><h1>Registry not found</h1><p class="muted">Check the link with the couple.</p><a href="/" class="btn">Go home</a></div>
+<div id="page" class="hidden">
+  <header class="cover" id="cover">
+    <div class="small" style="letter-spacing:.2em;text-transform:uppercase;opacity:.9">✨ Shubh Vivah ✨</div>
+    <h1 id="names"></h1>
+    <div id="when"></div>
+  </header>
+  <div class="wrap" style="padding-bottom:60px">
+    <div class="card note" id="note"></div>
+    <div class="row filters">
+      <div class="chips" id="filters" style="margin:0">
+        <button class="chip on" data-f="all">All gifts</button>
+        <button class="chip" data-f="fund">Cash &amp; shagun</button>
+        <button class="chip" data-f="product">Products</button>
+        <button class="chip" data-f="giftcard">Gift cards</button>
+      </div>
+      <span class="spacer"></span>
+      <label class="row small" style="margin:0;gap:6px;font-weight:600"><input type="checkbox" id="hideGone" style="width:auto"> Hide gifted</label>
+    </div>
+    <div class="items" id="items"></div>
+    <p class="small muted" style="text-align:center;margin-top:40px">Made with <a href="/">Shagun</a> — the free wedding registry for India. Cash gifts go straight to the couple's UPI.</p>
+  </div>
+</div>
+
+<script src="/common.js"></script>
+<script>
+const slug = location.pathname.split('/')[2];
+let reg, filter = 'all';
+
+async function load() {
+  try { reg = await api('/api/r/' + slug); } catch { $('#notFound').classList.remove('hidden'); return; }
+  $('#page').classList.remove('hidden');
+  document.documentElement.dataset.theme = reg.theme;
+  document.title = `${reg.partner1} & ${reg.partner2} — Wedding Registry`;
+  $('#names').innerHTML = `${esc(reg.partner1)} <span class="amp">&amp;</span> ${esc(reg.partner2)}`;
+  $('#when').textContent = [fmtDate(reg.date), reg.venue, reg.city].filter(Boolean).join(' · ');
+  if (reg.cover) { $('#cover').classList.add('has-img'); $('#cover').style.backgroundImage = `url("${encodeURI(reg.cover)}")`; }
+  $('#note').textContent = reg.note || 'Your presence at our wedding is the greatest gift. If you wish to bless us with something more, here are a few ideas. 🙏';
+  render();
+}
+
+function render() {
+  const hide = $('#hideGone').checked;
+  const list = reg.items
+    .filter(i => filter === 'all' || i.type === filter)
+    .filter(i => !(hide && i.type === 'product' && i.claimed >= i.qty))
+    .sort((a, b) => (!!b.mostWanted - !!a.mostWanted) || (a.order - b.order));
+  $('#items').innerHTML = list.map(i => {
+    const gone = i.type === 'product' && i.claimed >= i.qty;
+    const prog = i.target ? Math.min(100, Math.round(i.raised / i.target * 100)) : 0;
+    const cashOk = i.type === 'product' || reg.upiId;
+    return `<div class="card item ${gone ? 'gone' : ''}">
+      <div class="ph">${itemVisual(i)}</div>
+      <div class="body">
+        <div class="row" style="gap:6px">${i.mostWanted ? '<span class="tag">★ Most wanted</span>' : ''}${gone ? '<span class="tag done">✓ Gifted</span>' : ''}</div>
+        <h3>${esc(i.title)}</h3>
+        ${i.description ? `<div class="small muted">${esc(i.description)}</div>` : ''}
+        ${i.type === 'product'
+          ? `<div class="price">${i.price ? inr(i.price) : ''} <span class="small muted">${esc(i.store || '')}${i.qty > 1 ? ` · ${i.claimed} of ${i.qty} bought` : ''}</span></div>`
+          : `${i.target ? `<div class="bar"><i style="width:${prog}%"></i></div><div class="small"><b>${inr(i.raised)}</b> <span class="muted">of ${inr(i.target)} · ${i.contributors} guest${i.contributors === 1 ? '' : 's'}</span></div>` : i.contributors ? `<div class="small muted">${i.contributors} guest${i.contributors === 1 ? ' has' : 's have'} blessed the couple</div>` : ''}`}
+        <div class="actions">${gone ? '' : cashOk
+          ? `<button class="btn sm" data-gift="${i.id}">${i.type === 'product' ? 'Gift this' : i.title === 'Shagun' ? 'Send shagun' : 'Contribute'}</button>`
+          : '<span class="small muted">Cash gifts open soon</span>'}</div>
+      </div></div>`;
+  }).join('') || '<p class="muted">Nothing here yet.</p>';
+}
+
+$('#filters').onclick = e => { const f = e.target.dataset.f; if (!f) return; filter = f; document.querySelectorAll('#filters .chip').forEach(c => c.classList.toggle('on', c.dataset.f === f)); render(); };
+$('#hideGone').onchange = render;
+$('#items').onclick = e => { const b = e.target.closest('[data-gift]'); if (b) giftModal(reg.items.find(i => i.id === b.dataset.gift)); };
+
+const guestFields = `
+  <div class="grid2"><div><label>Your name</label><input name="guestName" required placeholder="Sharma Uncle & family"></div>
+  <div><label>Phone <span class="muted">(optional)</span></label><input name="phone" type="tel" inputmode="tel" placeholder="+91"></div></div>
+  <label>Blessing / message</label><textarea name="message" rows="2" placeholder="Wishing you a lifetime of happiness!"></textarea>`;
+
+function giftModal(item) { item.type === 'product' ? productModal(item) : cashModal(item); }
+
+function productModal(item) {
+  modal(`
+    <div class="row"><h2 style="margin:0">Gift: ${esc(item.title)}</h2><span class="spacer"></span><button class="btn plain sm" data-close>✕</button></div>
+    <p class="small muted">Reserve it first so nobody else buys the same thing. You'll then see where to send it.</p>
+    <form>${guestFields}<div class="err"></div><button class="btn" style="width:100%;margin-top:8px">Reserve this gift</button></form>`, (card) => {
+    const f = card.querySelector('form');
+    f.onsubmit = async e => {
+      e.preventDefault();
+      try {
+        const r = await api(`/api/r/${slug}/gift`, { body: { ...formData(f), itemId: item.id } });
+        card.innerHTML = `<div class="row"><h2 style="margin:0">Reserved for you 🎉</h2><span class="spacer"></span><button class="btn plain sm" data-close>✕</button></div>
+          <p>Now buy it on the store and ship it to the couple${r.address ? ':' : ', or bring it along to the wedding.'}</p>
+          ${r.address ? `<div class="card" style="background:var(--soft);box-shadow:none;white-space:pre-line"><b>Deliver to ${esc(reg.partner1)} &amp; ${esc(reg.partner2)}</b>\n${esc(r.address)}</div>` : ''}
+          ${item.url ? `<a class="btn" style="width:100%;margin-top:16px" href="${esc(item.url)}" target="_blank" rel="noopener">Buy on ${esc(item.store || 'the store')} ↗</a>` : ''}
+          <p class="small muted" style="margin-bottom:0">Tip: tick "This is a gift" at checkout so the price isn't on the invoice.</p>`;
+        load();
+      } catch (err) { f.querySelector('.err').textContent = err.message; }
+    };
+  });
+}
+
+function cashModal(item) {
+  const amounts = item.title === 'Shagun' ? [501, 1101, 2100, 5100, 11000] : [1100, 2100, 5100, 11000, 21000];
+  modal(`
+    <div class="row"><h2 style="margin:0">${esc(item.title)}</h2><span class="spacer"></span><button class="btn plain sm" data-close>✕</button></div>
+    <form id="cf">
+      <label>Amount</label>
+      <div class="chips" id="amts">${amounts.map(a => `<button type="button" class="chip" data-a="${a}">${inr(a)}</button>`).join('')}</div>
+      <input name="amount" type="number" min="1" inputmode="numeric" required placeholder="Or enter any amount (₹)" style="margin-top:10px">
+      ${guestFields}
+      <div class="err"></div>
+      <button class="btn" style="width:100%;margin-top:8px">Continue to pay</button>
+    </form>
+    <div id="pay" class="hidden" style="text-align:center">
+      <p>Pay <b id="payAmt"></b> to <b>${esc(reg.upiName || reg.partner1)}</b><br><span class="small muted">${esc(reg.upiId)}</span></p>
+      <a class="btn" id="upiBtn" style="width:100%">Pay with GPay / PhonePe / Paytm</a>
+      <p class="small muted" style="margin:14px 0 6px">On a computer? Scan with any UPI app:</p>
+      <div id="upiQr" style="display:inline-block;padding:10px;background:#fff;border-radius:10px"></div>
+      <label style="text-align:left">UPI transaction ID <span class="muted">(optional — helps the couple match it)</span></label>
+      <input id="upiRef" placeholder="e.g. 4123 5678 9012">
+      <div class="err" id="payErr"></div>
+      <button class="btn ghost" id="done" style="width:100%">I've paid — send my blessing</button>
+      <p class="small muted" style="margin-bottom:0">Money goes directly to the couple's bank via UPI. Shagun never handles it.</p>
+    </div>`, (card, close) => {
+    const f = card.querySelector('#cf');
+    card.querySelector('#amts').onclick = e => {
+      const a = e.target.dataset.a; if (!a) return;
+      f.amount.value = a; card.querySelectorAll('#amts .chip').forEach(c => c.classList.toggle('on', c.dataset.a === a));
+    };
+    f.amount.oninput = () => card.querySelectorAll('#amts .chip').forEach(c => c.classList.toggle('on', c.dataset.a === f.amount.value));
+    let data;
+    f.onsubmit = e => {
+      e.preventDefault();
+      data = formData(f);
+      const link = upiLink({ pa: reg.upiId, pn: reg.upiName || reg.partner1, am: data.amount, tn: `${item.title} from ${data.guestName}` });
+      card.querySelector('#payAmt').textContent = inr(data.amount);
+      card.querySelector('#upiBtn').href = link;
+      if (window.QRCode) new QRCode(card.querySelector('#upiQr'), { text: link, width: 180, height: 180 });
+      f.classList.add('hidden'); card.querySelector('#pay').classList.remove('hidden');
+    };
+    card.querySelector('#done').onclick = async () => {
+      try {
+        await api(`/api/r/${slug}/gift`, { body: { ...data, itemId: item.id, upiRef: card.querySelector('#upiRef').value } });
+        card.innerHTML = `<div style="text-align:center"><div style="font-size:3rem">🙏</div><h2>Thank you, ${esc(data.guestName)}!</h2>
+          <p class="muted">${esc(reg.partner1)} &amp; ${esc(reg.partner2)} will see your blessing.</p><button class="btn" data-close>Back to registry</button></div>`;
+        load();
+      } catch (err) { card.querySelector('#payErr').textContent = err.message; }
+    };
+  });
+}
+
+load();
+</script>
+</body>
+</html>

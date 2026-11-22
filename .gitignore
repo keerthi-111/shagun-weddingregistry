@@ -1,0 +1,8 @@
+node_modules/
+bin/
+obj/
+*.db
+*.db-*
+backend/Shagun.Api/wwwroot/
+prototype-node/data/
+.DS_Store

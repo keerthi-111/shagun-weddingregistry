@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Registry — Shagun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="toran"></div>
+<div class="wrap">
+  <nav class="nav">
+    <a class="logo" href="/">🪔 Shagun<span>.</span></a>
+    <div class="spacer"></div>
+    <a id="viewLink" class="btn ghost sm hidden" target="_blank">View as guest ↗</a>
+    <button id="logout" class="btn plain sm hidden">Log out</button>
+  </nav>
+
+  <!-- AUTH -->
+  <div id="auth" class="hidden" style="max-width:420px;margin:40px auto">
+    <div class="card">
+      <h2 id="authTitle">Create your free registry</h2>
+      <p class="muted small" id="authSub">Takes two minutes. You can edit everything later.</p>
+      <form id="authForm">
+        <div id="nameField"><label>Your name</label><input name="name" autocomplete="name"></div>
+        <label>Email</label><input name="email" type="email" required autocomplete="email">
+        <label>Password</label><input name="password" type="password" required minlength="6" autocomplete="current-password">
+        <div class="err" id="authErr"></div>
+        <button class="btn" style="width:100%;margin-top:6px">Continue</button>
+      </form>
+      <p class="small muted" style="text-align:center;margin-bottom:0"><a href="#" id="authToggle">Already have an account? Log in</a></p>
+    </div>
+  </div>
+
+  <!-- SETUP / SETTINGS FORM (reused) -->
+  <template id="regFormTpl">
+    <form class="regForm">
+      <div class="grid2">
+        <div><label>Partner 1</label><input name="partner1" required placeholder="Ananya"></div>
+        <div><label>Partner 2</label><input name="partner2" required placeholder="Kabir"></div>
+        <div><label>Wedding date</label><input name="date" type="date"></div>
+        <div><label>City</label><input name="city" placeholder="Jaipur"></div>
+      </div>
+      <label>Venue <span class="muted">(optional)</span></label><input name="venue" placeholder="Rambagh Palace">
+      <label>A note for your guests</label>
+      <textarea name="note" placeholder="Your presence is the biggest gift! But if you'd like to bless us with something, here are a few things we'd love…"></textarea>
+      <label>Cover photo link <span class="muted">(optional)</span></label><input name="cover" placeholder="https://…/our-photo.jpg">
+      <label>Colour theme</label>
+      <select name="theme"><option value="marigold">Marigold (red & gold)</option><option value="rani">Rani pink</option><option value="peacock">Peacock teal</option><option value="mehendi">Mehendi green</option></select>
+      <h3 style="margin-top:24px;font-size:1.1rem">Cash gifts via UPI</h3>
+      <p class="small muted" style="margin:0">Guests pay this UPI ID directly from their own app. We never hold your money.</p>
+      <div class="grid2">
+        <div><label>UPI ID</label><input name="upiId" placeholder="ananya@okhdfcbank"></div>
+        <div><label>Name on UPI account</label><input name="upiName" placeholder="Ananya Sharma"></div>
+      </div>
+      <label>Delivery address for gifts <span class="muted">(only shown to guests who buy a product)</span></label>
+      <textarea name="address" placeholder="Flat, street, city, PIN code, phone"></textarea>
+      <div class="err"></div>
+      <button class="btn" style="margin-top:6px">Save registry</button>
+    </form>
+  </template>
+
+  <div id="setup" class="hidden" style="max-width:640px;margin:20px auto 60px">
+    <div class="card"><h2>Tell us about your wedding 💍</h2><div id="setupSlot"></div></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dash" class="hidden" style="padding-bottom:60px">
+    <h1 id="dTitle" style="margin-top:12px"></h1>
+    <div class="muted" id="dSub"></div>
+    <div class="stats" style="margin-top:20px">
+      <div class="card stat"><b id="sItems">0</b><span class="small muted">gifts on your list</span></div>
+      <div class="card stat"><b id="sGifted">0</b><span class="small muted">gifts bought by guests</span></div>
+      <div class="card stat"><b id="sCash">₹0</b><span class="small muted">cash pledged via UPI</span></div>
+      <div class="card stat"><b id="sGuests">0</b><span class="small muted">guests who gifted</span></div>
+    </div>
+    <div class="tabs">
+      <button data-tab="list" class="on">My list</button>
+      <button data-tab="received">Received &amp; thank-yous</button>
+      <button data-tab="share">Share</button>
+      <button data-tab="settings">Settings</button>
+    </div>
+
+    <div data-pane="list">
+      <div class="row" style="margin-bottom:16px">
+        <button class="btn" data-add="product">+ Add product from link</button>
+        <button class="btn ghost" data-add="fund">+ Cash fund</button>
+        <button class="btn ghost" data-add="giftcard">+ Gift card</button>
+      </div>
+      <div class="items" id="items"></div>
+    </div>
+
+    <div data-pane="received" class="hidden">
+      <div class="row" style="margin-bottom:12px"><span class="muted small">Cash amounts are what guests reported paying — match them against your UPI app.</span><span class="spacer"></span><button class="btn plain sm" id="csv">Download CSV</button></div>
+      <div class="card table-scroll" style="padding:8px 12px"><table><thead><tr><th>Guest</th><th>Gift</th><th>Amount</th><th>Message</th><th>Received</th><th>Thanked</th></tr></thead><tbody id="giftRows"></tbody></table></div>
+    </div>
+
+    <div data-pane="share" class="hidden">
+      <div class="grid2" style="gap:18px">
+        <div class="card">
+          <h3>Your registry link</h3>
+          <div class="row"><input id="shareUrl" readonly style="flex:1"><button class="btn sm" id="copy">Copy</button></div>
+          <div class="row" style="margin-top:14px">
+            <a class="btn" id="wa" target="_blank" style="background:#25D366">Share on WhatsApp</a>
+          </div>
+          <label style="margin-top:20px">Message preview</label>
+          <textarea id="waText" rows="5"></textarea>
+        </div>
+        <div class="card" style="text-align:center">
+          <h3>QR code for your invite card</h3>
+          <div id="qr" style="display:inline-block;padding:12px;background:#fff;border-radius:12px"></div>
+          <p class="small muted">Right-click → Save image, and print it on your wedding card.</p>
+        </div>
+      </div>
+    </div>
+
+    <div data-pane="settings" class="hidden"><div class="card" style="max-width:640px" id="settingsSlot"></div></div>
+  </div>
+</div>
+
+<script src="/common.js"></script>
+<script>
+let state = { user: null, registry: null };
+let signup = true;
+
+function show(id) { for (const s of ['auth', 'setup', 'dash']) $('#' + s).classList.toggle('hidden', s !== id); }
+
+async function load() {
+  state = await api('/api/me');
+  $('#logout').classList.toggle('hidden', !state.user);
+  if (!state.user) { show('auth'); if (location.pathname === '/login') toggleAuth(); return; }
+  if (!state.registry) { show('setup'); mountRegForm($('#setupSlot'), { partner1: state.user.name }); return; }
+  show('dash'); render();
+}
+
+// ----- auth -----
+function toggleAuth() {
+  signup = !signup;
+  $('#nameField').classList.toggle('hidden', !signup);
+  $('#authTitle').textContent = signup ? 'Create your free registry' : 'Welcome back';
+  $('#authSub').textContent = signup ? 'Takes two minutes. You can edit everything later.' : 'Log in to manage your registry.';
+  $('#authToggle').textContent = signup ? 'Already have an account? Log in' : 'New here? Create a registry';
+}
+$('#authToggle').onclick = e => { e.preventDefault(); toggleAuth(); };
+$('#authForm').onsubmit = async e => {
+  e.preventDefault();
+  try { await api(signup ? '/api/signup' : '/api/login', { body: formData(e.target) }); load(); }
+  catch (err) { $('#authErr').textContent = err.message; }
+};
+$('#logout').onclick = async () => { await api('/api/logout', { body: {} }); location.href = '/'; };
+
+// ----- registry form -----
+function mountRegForm(slot, values) {
+  slot.innerHTML = '';
+  slot.appendChild($('#regFormTpl').content.cloneNode(true));
+  const f = slot.querySelector('form');
+  for (const [k, v] of Object.entries(values || {})) if (f.elements[k]) f.elements[k].value = v ?? '';
+  f.onsubmit = async e => {
+    e.preventDefault();
+    try { await api('/api/registry', { method: 'PUT', body: formData(f) }); toast('Saved'); load(); }
+    catch (err) { f.querySelector('.err').textContent = err.message; }
+  };
+}
+
+// ----- dashboard -----
+function render() {
+  const r = state.registry;
+  document.documentElement.dataset.theme = r.theme;
+  $('#dTitle').innerHTML = `${esc(r.partner1)} <span style="color:var(--gold)">&amp;</span> ${esc(r.partner2)}`;
+  $('#dSub').textContent = [fmtDate(r.date), r.city].filter(Boolean).join(' · ');
+  const link = `${location.origin}/r/${r.slug}`;
+  $('#viewLink').href = link; $('#viewLink').classList.remove('hidden');
+
+  const gifts = r.gifts;
+  $('#sItems').textContent = r.items.length;
+  $('#sGifted').textContent = gifts.filter(g => g.type === 'purchase').length;
+  $('#sCash').textContent = inr(gifts.filter(g => g.type === 'contribution').reduce((s, g) => s + g.amount, 0));
+  $('#sGuests').textContent = new Set(gifts.map(g => g.guestName.toLowerCase())).size;
+
+  $('#items').innerHTML = (!r.upiId && r.items.some(i => i.type !== 'product') ? `<div class="card" style="grid-column:1/-1;background:var(--soft)">⚠️ Add your UPI ID in <a href="#" data-goto="settings">Settings</a> so guests can send cash gifts.</div>` : '') +
+    (r.items.map(i => {
+      const isProd = i.type === 'product';
+      const prog = i.target ? Math.min(100, Math.round(i.raised / i.target * 100)) : 0;
+      return `<div class="card item">
+        <div class="ph">${itemVisual(i)}</div>
+        <div class="body">
+          <div class="row" style="gap:6px">${i.mostWanted ? '<span class="tag">★ Most wanted</span>' : ''}<span class="tag">${i.type === 'fund' ? 'Cash fund' : i.type === 'giftcard' ? 'Gift card' : esc(i.store || 'Product')}</span></div>
+          <h3>${esc(i.title)}</h3>
+          ${isProd ? `<div class="price">${i.price ? inr(i.price) : ''} <span class="small muted">· ${i.claimed}/${i.qty} bought</span></div>`
+            : `${i.target ? `<div class="bar"><i style="width:${prog}%"></i></div>` : ''}<div class="small"><b>${inr(i.raised)}</b> <span class="muted">${i.target ? 'of ' + inr(i.target) : 'received'} · ${i.contributors} guest${i.contributors === 1 ? '' : 's'}</span></div>`}
+          <div class="actions"><button class="btn plain sm" data-edit="${i.id}">Edit</button><button class="btn plain sm" data-del="${i.id}">Remove</button></div>
+        </div></div>`;
+    }).join('') || '<p class="muted">Your list is empty — add your first gift.</p>');
+
+  $('#giftRows').innerHTML = gifts.map(g => `<tr>
+      <td><b>${esc(g.guestName)}</b>${g.phone ? `<div class="small muted">${esc(g.phone)}</div>` : ''}</td>
+      <td>${esc(g.itemTitle)}${g.orderRef ? `<div class="small muted">Order: ${esc(g.orderRef)}</div>` : ''}${g.upiRef ? `<div class="small muted">UPI ref: ${esc(g.upiRef)}</div>` : ''}</td>
+      <td>${g.amount ? inr(g.amount) : '—'}</td>
+      <td class="small">${esc(g.message) || '<span class="muted">—</span>'}</td>
+      <td><input type="checkbox" data-g="${g.id}" data-f="received" ${g.received ? 'checked' : ''}></td>
+      <td><input type="checkbox" data-g="${g.id}" data-f="thanked" ${g.thanked ? 'checked' : ''}></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="muted">No gifts yet. Share your link to get started!</td></tr>';
+
+  $('#shareUrl').value = link;
+  if (!$('#waText').dataset.touched) $('#waText').value = `Hello! 🙏 We're getting married${r.date ? ' on ' + fmtDate(r.date) : ''}${r.city ? ' in ' + r.city : ''}! Your blessings mean the world to us. If you'd like to send a gift or shagun, here's our registry:\n${link}\n\n— ${r.partner1} & ${r.partner2}`;
+  updateWa();
+  $('#qr').innerHTML = '';
+  if (window.QRCode) new QRCode($('#qr'), { text: link, width: 200, height: 200, colorDark: '#2b1d14' });
+  else $('#qr').textContent = 'QR needs an internet connection to load.';
+
+  mountRegForm($('#settingsSlot'), r);
+}
+function updateWa() { $('#wa').href = 'https://wa.me/?text=' + encodeURIComponent($('#waText').value); }
+$('#waText').oninput = () => { $('#waText').dataset.touched = 1; updateWa(); };
+$('#copy').onclick = () => { navigator.clipboard.writeText($('#shareUrl').value); toast('Link copied'); };
+
+document.querySelector('.tabs').onclick = e => { const t = e.target.dataset.tab; if (t) goTab(t); };
+function goTab(t) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('hidden', p.dataset.pane !== t));
+}
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-add],[data-edit],[data-del],[data-goto]');
+  if (!el) return;
+  if (el.dataset.goto) { e.preventDefault(); goTab(el.dataset.goto); }
+  if (el.dataset.add) itemModal({ type: el.dataset.add });
+  if (el.dataset.edit) itemModal(state.registry.items.find(i => i.id === el.dataset.edit));
+  if (el.dataset.del && confirm('Remove this gift from your registry?')) { await api('/api/items/' + el.dataset.del, { method: 'DELETE' }); load(); }
+});
+document.addEventListener('change', async e => {
+  const g = e.target.dataset.g;
+  if (g) { await api('/api/gifts/' + g, { method: 'PATCH', body: { [e.target.dataset.f]: e.target.checked } }); }
+});
+$('#csv').onclick = () => {
+  const rows = [['Date', 'Guest', 'Phone', 'Gift', 'Type', 'Amount (INR)', 'Reference', 'Message', 'Received', 'Thanked']].concat(
+    state.registry.gifts.map(g => [new Date(g.createdAt).toLocaleDateString('en-IN'), g.guestName, g.phone, g.itemTitle, g.type, g.amount, g.orderRef || g.upiRef || '', g.message, g.received ? 'yes' : 'no', g.thanked ? 'yes' : 'no']));
+  const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'registry-gifts.csv'; a.click();
+};
+
+// ----- add / edit item -----
+function itemModal(item) {
+  const editing = !!item.id, t = item.type;
+  const head = { product: 'Add a product', fund: 'Add a cash fund', giftcard: 'Add a gift card' }[t];
+  modal(`
+    <div class="row"><h2 style="margin:0">${editing ? 'Edit gift' : head}</h2><span class="spacer"></span><button class="btn plain sm" data-close>✕</button></div>
+    <form id="itemForm">
+      ${t === 'product' ? `<label>Product link</label><div class="row"><input name="url" placeholder="Paste a link from Amazon, Flipkart, Myntra, Pepperfry…" style="flex:1"><button type="button" class="btn sm" id="fetchBtn">Fetch</button></div>
+        <div class="small muted" id="fetchMsg">We'll try to pull in the name, photo and price.</div>` : ''}
+      ${t === 'fund' && !editing ? `<label>Quick start</label><div class="chips" id="presets">
+        <button type="button" class="chip" data-p="Honeymoon fund|Help us make memories on our first trip together.|150000">🏝️ Honeymoon</button>
+        <button type="button" class="chip" data-p="Our first home|Help us set up our new home together.|200000">🏡 New home</button>
+        <button type="button" class="chip" data-p="Shagun|Send your blessings the traditional way.|0">🧧 Shagun</button>
+        <button type="button" class="chip" data-p="Charity in our name|We'll donate everything to a cause close to our hearts.|50000">🤲 Charity</button></div>` : ''}
+      <label>${t === 'giftcard' ? 'Gift card (brand)' : 'Name'}</label><input name="title" required placeholder="${t === 'giftcard' ? 'Taj Hotels gift card' : t === 'fund' ? 'Honeymoon in Bali' : 'Philips air fryer'}">
+      <label>Description <span class="muted">(optional)</span></label><textarea name="description" rows="2"></textarea>
+      <div class="grid2">
+        ${t === 'product' ? `<div><label>Price (₹)</label><input name="price" type="number" min="0" inputmode="numeric"></div>
+          <div><label>Quantity wanted</label><input name="qty" type="number" min="1" max="50" value="1"></div>
+          <div><label>Store</label><input name="store" placeholder="amazon.in"></div>` :
+          `<div><label>Goal (₹) <span class="muted">— blank for no goal</span></label><input name="target" type="number" min="0" inputmode="numeric"></div>`}
+        <div><label>Image link <span class="muted">(optional)</span></label><input name="image"></div>
+      </div>
+      <label class="row" style="font-weight:600;gap:8px"><input type="checkbox" name="mostWanted" style="width:auto"> Mark as most wanted</label>
+      <div class="err"></div>
+      <button class="btn" style="width:100%;margin-top:8px">${editing ? 'Save changes' : 'Add to registry'}</button>
+    </form>`, (card, close) => {
+    const f = card.querySelector('form');
+    for (const [k, v] of Object.entries(item)) if (f.elements[k]) f.elements[k].type === 'checkbox' ? (f.elements[k].checked = !!v) : (f.elements[k].value = v || (k === 'qty' ? 1 : ''));
+    card.querySelector('#presets')?.addEventListener('click', e => {
+      const p = e.target.closest('[data-p]')?.dataset.p; if (!p) return;
+      const [title, d, target] = p.split('|'); f.title.value = title; f.description.value = d; f.target.value = +target || '';
+    });
+    const fetchBtn = card.querySelector('#fetchBtn');
+    const doFetch = async () => {
+      if (!f.url.value.trim()) return;
+      fetchBtn.disabled = true; card.querySelector('#fetchMsg').textContent = 'Fetching…';
+      try {
+        const d = await api('/api/preview', { body: { url: f.url.value.trim() } });
+        if (d.error) throw new Error(d.error);
+        if (d.title) f.title.value = d.title; if (d.image) f.image.value = d.image; if (d.price) f.price.value = d.price; f.store.value = d.store;
+        card.querySelector('#fetchMsg').textContent = d.title ? '✓ Got it — check the details below.' : "The store didn't share details — please fill them in.";
+      } catch (err) { card.querySelector('#fetchMsg').textContent = err.message; }
+      fetchBtn.disabled = false;
+    };
+    fetchBtn?.addEventListener('click', doFetch);
+    f.url?.addEventListener('paste', () => setTimeout(doFetch, 50));
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const body = { ...formData(f), type: t, mostWanted: f.mostWanted.checked };
+      try { await api(editing ? '/api/items/' + item.id : '/api/items', { method: editing ? 'PUT' : 'POST', body }); close(); load(); toast(editing ? 'Saved' : 'Added to your registry'); }
+      catch (err) { f.querySelector('.err').textContent = err.message; }
+    };
+  });
+}
+
+load();
+</script>
+</body>
+</html>

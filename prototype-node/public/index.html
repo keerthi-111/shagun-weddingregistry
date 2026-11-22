@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shagun — Wedding Gift Registry for India</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; padding: 48px 0 64px; }
+  .hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); }
+  .hero p.lead { font-size: 1.15rem; color: var(--muted); max-width: 32em; }
+  .preview { transform: rotate(1.5deg); }
+  .preview .item { margin-top: 14px; }
+  section { padding: 56px 0; }
+  .cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .cat { text-align: center; padding: 22px 12px; }
+  .cat div { font-size: 2rem; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; counter-reset: s; }
+  .step::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; margin-bottom: 10px; }
+  details { border-bottom: 1px solid var(--line); padding: 14px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  .band { background: var(--soft); }
+  footer { padding: 32px 0; border-top: 1px solid var(--line); }
+  @media (max-width: 800px) { .hero { grid-template-columns: 1fr; padding-top: 16px; } .preview { transform: none; } }
+</style>
+</head>
+<body>
+<div class="toran"></div>
+<div class="wrap">
+  <nav class="nav">
+    <a class="logo" href="/">🪔 Shagun<span>.</span></a>
+    <div class="spacer"></div>
+    <a href="/login" class="btn plain sm" id="navLogin">Log in</a>
+    <a href="/app" class="btn sm">Create registry</a>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <span class="tag">Made for Indian weddings</span>
+      <h1>Get the gifts you actually want — not the fifth dinner set.</h1>
+      <p class="lead">One link for everything: products from any store, shagun and honeymoon funds paid straight to your UPI, and gift cards. Share it on WhatsApp. Guests need no account.</p>
+      <div class="row" style="margin-top:22px">
+        <a href="/app" class="btn">Start your free registry</a>
+        <a href="#how" class="btn ghost">How it works</a>
+      </div>
+      <p class="small muted" style="margin-top:14px">Free forever · No commission on cash gifts · We never hold your money</p>
+    </div>
+    <div class="preview">
+      <div class="card">
+        <div class="serif" style="font-size:1.5rem">Ananya <span style="color:var(--gold)">&</span> Kabir</div>
+        <div class="small muted">14 February 2027 · Jaipur</div>
+        <div class="card item" style="box-shadow:none">
+          <div class="body">
+            <div class="row"><h3>🏝️ Honeymoon in Bali</h3><span class="spacer"></span><span class="tag">Fund</span></div>
+            <div class="bar"><i style="width:70%"></i></div>
+            <div class="small"><b>₹1,68,500</b> <span class="muted">of ₹2,40,000 · 22 guests</span></div>
+          </div>
+        </div>
+        <div class="card item" style="box-shadow:none">
+          <div class="body">
+            <div class="row"><h3>☕ Espresso machine</h3><span class="spacer"></span><span class="tag done">Gifted</span></div>
+            <div class="small muted">amazon.in · ₹18,990</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Everything you'd want on one list</h2>
+    <p class="muted">Mix and match — or keep it all cash. It's your wedding.</p>
+    <div class="cats" style="margin-top:20px">
+      <div class="card cat"><div>🍳</div><b>Kitchen</b><div class="small muted">from Amazon, Flipkart, Croma</div></div>
+      <div class="card cat"><div>🛋️</div><b>Home</b><div class="small muted">Pepperfry, IKEA, Urban Ladder</div></div>
+      <div class="card cat"><div>🧧</div><b>Shagun</b><div class="small muted">₹1,101 · ₹5,100 · ₹11,000</div></div>
+      <div class="card cat"><div>✈️</div><b>Honeymoon</b><div class="small muted">pooled by many guests</div></div>
+      <div class="card cat"><div>💆</div><b>Experiences</b><div class="small muted">spa, dining, stays</div></div>
+      <div class="card cat"><div>💳</div><b>Gift cards</b><div class="small muted">any brand you like</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <h3 class="muted" style="font-size:1.1rem;margin-top:20px">For the couple</h3>
+    <div class="steps">
+      <div class="card step"><b>Create your registry</b><p class="small muted">Your names, date, city, a note for guests, and your UPI ID.</p></div>
+      <div class="card step"><b>Add gifts from anywhere</b><p class="small muted">Paste a product link — we pull in the name, photo and price. Add cash funds with a goal.</p></div>
+      <div class="card step"><b>Share one link</b><p class="small muted">On WhatsApp, your wedding website, or print the QR on your card.</p></div>
+    </div>
+    <h3 class="muted" style="font-size:1.1rem;margin-top:28px">For guests</h3>
+    <div class="steps">
+      <div class="card step"><b>Open the link</b><p class="small muted">No sign-up, no app download.</p></div>
+      <div class="card step"><b>Buy or contribute</b><p class="small muted">Buy on the original store, or pay any amount via GPay, PhonePe, Paytm or any UPI app.</p></div>
+      <div class="card step"><b>Mark it &amp; bless</b><p class="small muted">Mark it gifted so nobody duplicates, and leave a message for the couple.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap" style="max-width:760px">
+    <h2>Questions</h2>
+    <details><summary>Is it really free?</summary><p class="muted">Yes. Creating and sharing a registry costs nothing, and there's no cut taken from cash gifts.</p></details>
+    <details><summary>Where does the money from cash funds go?</summary><p class="muted">Directly to your UPI ID. Guests pay from their own UPI app — Shagun never holds or touches the money.</p></details>
+    <details><summary>How do physical gifts reach us?</summary><p class="muted">Guests buy on the store's own site and ship to the address you share with them, or bring it to the wedding.</p></details>
+    <details><summary>Will guests buy the same thing twice?</summary><p class="muted">Once a guest marks a gift as bought, it shows as gifted to everyone else.</p></details>
+    <details><summary>Can I edit my registry after sharing it?</summary><p class="muted">Anytime. The link stays the same.</p></details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <span class="logo" style="font-size:1.1rem">🪔 Shagun<span>.</span></span>
+    <span class="spacer"></span>
+    <span class="small muted">Made in India with ❤️</span>
+  </div>
+</footer>
+<script src="/common.js"></script>
+<script>
+  api('/api/me').then(d => { if (d.user) { $('#navLogin').textContent = 'My registry'; $('#navLogin').href = '/app'; } }).catch(() => {});
+</script>
+</body>
+</html>
